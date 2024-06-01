@@ -1,0 +1,21 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+body {
+    background-color: #7cb3eb; /* Fondo de color claro */
+}
+
+.form-container {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar {
+    background-color: #343a40 !important; /* Fondo oscuro para la navbar */
+}
+
+.navbar .nav-link {
+    color: #fff !important; /* Color de texto blanco para los enlaces de la navbar */
+}
