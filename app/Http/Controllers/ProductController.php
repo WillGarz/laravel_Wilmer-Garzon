@@ -10,7 +10,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with('category')->get();
+        $products = Product::all();
         return view('products.index', compact('products'));
     }
 
@@ -25,21 +25,28 @@ class ProductController extends Controller
         $request->validate([
             'name' => 'required',
             'price' => 'required|numeric',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'category_id' => 'required|exists:categories,id',
         ]);
 
-        Product::create($request->all());
+        $product = new Product($request->all());
+
+        if ($request->hasFile('image')) {
+            $imageName = time() . '.' . $request->image->extension();
+            $request->image->move(public_path('images/products'), $imageName);
+            $product->image = $imageName;
+        }
+
+        $product->save();
+
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
 
-
-
-public function show($id)
-{
-    $product = Product::findOrFail($id);
-    return view('products.show', compact('product'));
-}
-
+    public function show(Product $product)
+    {
+        return view('products.show', compact('product'));
+    }
 
     public function edit(Product $product)
     {
@@ -47,26 +54,44 @@ public function show($id)
         return view('products.edit', compact('product', 'categories'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Product $product)
     {
         $request->validate([
             'name' => 'required',
             'price' => 'required|numeric',
             'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'category_id' => 'required|exists:categories,id',
         ]);
 
-        $product = Product::find($id);
-        $product->name = $request->input('name');
-        $product->price = $request->input('price');
-        $product->description = $request->input('description');
+        $product->fill($request->all());
+
+        if ($request->hasFile('image')) {
+            // Elimina la imagen anterior si existe
+            if ($product->image) {
+                if (file_exists(public_path('images/products/' . $product->image))) {
+                    unlink(public_path('images/products/' . $product->image));
+                }
+            }
+
+            $imageName = time() . '.' . $request->image->extension();
+            $request->image->move(public_path('images/products'), $imageName);
+            $product->image = $imageName;
+        }
+
         $product->save();
 
-        return redirect()->route('products.index')->with('success', 'Product updated successfully');
+        return redirect()->route('products.index')->with('success', 'Product updated successfully.');
     }
-
 
     public function destroy(Product $product)
     {
+        if ($product->image) {
+            if (file_exists(public_path('images/products/' . $product->image))) {
+                unlink(public_path('images/products/' . $product->image));
+            }
+        }
+
         $product->delete();
         return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }

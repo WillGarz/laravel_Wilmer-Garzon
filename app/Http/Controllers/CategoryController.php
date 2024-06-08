@@ -22,10 +22,22 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required',
-            'description' => 'nullable',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        Category::create($request->all());
+        $imageName = null;
+        if ($request->hasFile('image')) {
+            $imageName = time() . '.' . $request->image->extension();
+            $request->image->move(public_path('images/categories'), $imageName);
+        }
+
+        Category::create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'image' => $imageName,
+        ]);
+
         return redirect()->route('categories.index')->with('success', 'Category created successfully.');
     }
 
@@ -39,19 +51,44 @@ class CategoryController extends Controller
         return view('categories.edit', compact('category'));
     }
 
-    public function update(Request $request, Category $category)
+    public function update(Request $request, $id)
     {
         $request->validate([
             'name' => 'required',
-            'description' => 'nullable',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
         ]);
 
-        $category->update($request->all());
+        $category = Category::findOrFail($id);
+
+        if ($request->hasFile('image')) {
+            // Elimina la imagen anterior si existe
+            if ($category->image) {
+                if (file_exists(public_path('images/categories/' . $category->image))) {
+                    unlink(public_path('images/categories/' . $category->image));
+                }
+            }
+
+            $imageName = time() . '.' . $request->image->extension();
+            $request->image->move(public_path('images/categories'), $imageName);
+            $category->image = $imageName;
+        }
+
+        $category->name = $request->name;
+        $category->description = $request->description;
+        $category->save();
+
         return redirect()->route('categories.index')->with('success', 'Category updated successfully.');
     }
 
     public function destroy(Category $category)
     {
+        if ($category->image) {
+            if (file_exists(public_path('images/categories/' . $category->image))) {
+                unlink(public_path('images/categories/' . $category->image));
+            }
+        }
+
         $category->delete();
         return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
     }
